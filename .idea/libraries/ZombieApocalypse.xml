@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="ZombieApocalypse">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/ZombieApocalypse.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

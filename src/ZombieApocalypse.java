@@ -67,7 +67,6 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
     private final int[][] floorMap;
     private final int[][] ceilingMap;
     private final ArrayList<Texture> textures;
-    private final File folder;
     private final ArrayList<PointsFile> files;
     private ArrayList<ArrayList<Vector3D>> points;
     private int score;
@@ -97,15 +96,6 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
         frame = 0;
         // set initial game state
         gameState = "menu";
-        // delete all existing files
-        folder = new File("3DPoints");
-        File[] filelist = folder.listFiles();
-        if (filelist == null)
-            filelist = new File[0];
-        for (File file : filelist)
-            file.delete();
-        // Create 3D Points files
-        new CreatePoints("3DPoints");
         files = new ArrayList<>();
         readFile("tree.txt");
         readFile("zombie.txt");
@@ -144,11 +134,15 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
         score = 0;
         scoresList = new ArrayList<>();
         names = new ArrayList<>();
-        Scanner scores = new Scanner(new File("scores.txt"));
+        File scoresFile = new File("scores.txt");
+        if (!scoresFile.exists())
+            scoresFile.createNewFile(); // makes empty file if missing
+        Scanner scores = new Scanner(scoresFile);
         while (scores.hasNext()) {
             names.add(scores.next());
             scoresList.add(scores.nextInt());
         }
+        scores.close();
         if (!scoresList.isEmpty())
             sort(scoresList, names, 0, scoresList.size() - 1);
         // name input
@@ -431,11 +425,12 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
                 // Reset the game when score is saved
                 if (keyPressed && key.getKeyCode() == KeyEvent.VK_ENTER) {
                     if (!name.isEmpty()) {
-                        FileWriter fw = new FileWriter("scores.txt", true);
-                        BufferedWriter bw = new BufferedWriter(fw);
-                        PrintWriter scoresFile = new PrintWriter(bw);
-                        scoresFile.println(name + " " + score);
-                        scoresFile.close();
+                        File scoresFile = new File("scores.txt");
+                        if (!scoresFile.exists())
+                            scoresFile.createNewFile();
+                        try (PrintWriter scoresWriter = new PrintWriter(new BufferedWriter(new FileWriter(scoresFile, true)))) {
+                            scoresWriter.println(name + " " + score);
+                        }
                         // Add structures made of points
                         points = new ArrayList<>();
                         for (int i = 0; i < files.size(); i++)
@@ -470,11 +465,15 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
                         score = 0;
                         scoresList = new ArrayList<>();
                         names = new ArrayList<>();
-                        Scanner scores = new Scanner(new File("scores.txt"));
-                        while (scores.hasNextLine()) {
+                        scoresFile = new File("scores.txt");
+                        if (!scoresFile.exists())
+                            scoresFile.createNewFile(); // makes empty file if missing
+                        Scanner scores = new Scanner(scoresFile);
+                        while (scores.hasNext()) {
                             names.add(scores.next());
                             scoresList.add(scores.nextInt());
                         }
+                        scores.close();
                         if (!scoresList.isEmpty())
                             sort(scoresList, names, 0, scoresList.size() - 1);
                         // name input
@@ -537,21 +536,33 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
     }
 
     public void readFile(String loc) throws IOException {
-        Scanner file = new Scanner(new File(folder.getName() + "/" + loc));
+        // First pass: count lines
         int ctr = 0;
-        while (file.hasNextLine()) {
-            file.nextLine();
-            ctr++;
+        try (InputStream in = getClass().getResourceAsStream(loc)) {
+            if (in == null)
+                throw new FileNotFoundException("Resource not found: " + loc);
+            Scanner file = new Scanner(in);
+            while (file.hasNextLine()) {
+                file.nextLine();
+                ctr++;
+            }
         }
+
         files.add(new PointsFile(ctr));
-        file = new Scanner(new File(folder.getName() + "/" + loc));
-        ctr = 0;
-        while (file.hasNextDouble()) {
-            files.getLast().x[ctr] = file.nextDouble();
-            files.getLast().y[ctr] = file.nextDouble();
-            files.getLast().z[ctr] = file.nextDouble();
-            files.getLast().color[ctr] = file.nextInt();
-            ctr++;
+
+        // Second pass: actually read data
+        try (InputStream in = getClass().getResourceAsStream(loc)) {
+            if (in == null)
+                throw new FileNotFoundException("Resource not found: " + loc);
+            Scanner file = new Scanner(in);
+            ctr = 0;
+            while (file.hasNextDouble()) {
+                files.getLast().x[ctr] = file.nextDouble();
+                files.getLast().y[ctr] = file.nextDouble();
+                files.getLast().z[ctr] = file.nextDouble();
+                files.getLast().color[ctr] = file.nextInt();
+                ctr++;
+            }
         }
     }
 

@@ -1,9 +1,9 @@
 import java.io.*;
-public class CreatePoints
+public class Create3DPointFiles
 {
     private final String folder;
     
-    public CreatePoints(String folder) throws IOException
+    public Create3DPointFiles(String folder) throws IOException
     {
         this.folder = folder;
         new Tree(newFile("tree.txt"));
@@ -13,5 +13,9 @@ public class CreatePoints
     private PrintWriter newFile(String file) throws IOException
     {
         return new PrintWriter(folder + "/" + file);
+    }
+
+    public static void main(String[] args) throws IOException {
+        new Create3DPointFiles("resources");
     }
 }

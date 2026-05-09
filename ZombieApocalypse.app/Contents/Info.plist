@@ -1,15 +1,39 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-        "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<?xml version="1.0" ?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-    <key>CFBundleName</key>
-<string>Zombie Apocalypse</string>
-    <key>CFBundleExecutable</key>
-    <string>ZombieApocalypse</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.casey.zombieapocalypse</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-</dict>
+ <dict>
+  <key>LSMinimumSystemVersion</key>
+  <string>10.11</string>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>English</string>
+  <key>CFBundleAllowMixedLocalizations</key>
+  <true/>
+  <key>CFBundleExecutable</key>
+  <string>ZombieApocalypse</string>
+  <key>CFBundleIconFile</key>
+  <string>ZombieApocalypse.icns</string>
+  <key>CFBundleIdentifier</key>
+  <string>ZombieApocalypse</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>ZombieApocalypse</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0</string>
+  <key>CFBundleSignature</key>
+  <string>????</string>
+  <!-- See https://developer.apple.com/app-store/categories/ for list of AppStore categories -->
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.utilities</string>
+  <key>CFBundleVersion</key>
+  <string>1.0</string>
+  <key>NSHumanReadableCopyright</key>
+  <string>Copyright (C) 2026</string>
+  <key>NSHighResolutionCapable</key>
+  <string>true</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>The application ZombieApocalypse is requesting access to the microphone.</string>
+ </dict>
 </plist>

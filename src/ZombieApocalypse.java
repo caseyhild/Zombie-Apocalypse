@@ -134,7 +134,7 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
         score = 0;
         scoresList = new ArrayList<>();
         names = new ArrayList<>();
-        File scoresFile = new File("scores.txt");
+        File scoresFile = getScoresFile();
         if (!scoresFile.exists())
             scoresFile.createNewFile(); // makes empty file if missing
         Scanner scores = new Scanner(scoresFile);
@@ -425,7 +425,7 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
                 // Reset the game when score is saved
                 if (keyPressed && key.getKeyCode() == KeyEvent.VK_ENTER) {
                     if (!name.isEmpty()) {
-                        File scoresFile = new File("scores.txt");
+                        File scoresFile = getScoresFile();
                         if (!scoresFile.exists())
                             scoresFile.createNewFile();
                         try (PrintWriter scoresWriter = new PrintWriter(new BufferedWriter(new FileWriter(scoresFile, true)))) {
@@ -465,7 +465,7 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
                         score = 0;
                         scoresList = new ArrayList<>();
                         names = new ArrayList<>();
-                        scoresFile = new File("scores.txt");
+                        scoresFile = getScoresFile();
                         if (!scoresFile.exists())
                             scoresFile.createNewFile(); // makes empty file if missing
                         Scanner scores = new Scanner(scoresFile);
@@ -536,12 +536,60 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
     }
 
     public void readFile(String loc) throws IOException {
+        java.io.InputStream is = null;
+        
+        // Method 1: Try to load from JAR resources (PRIMARY - for standalone JAR)
+        is = getClass().getClassLoader().getResourceAsStream("resources/" + loc);
+        
+        // Method 2: Try as a regular file (FALLBACK - for development)
+        if (is == null)
+        {
+            File f = new File("resources/" + loc);
+            if (!f.exists())
+            {
+                String classPath = getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
+                File classDir = new File(classPath).getParentFile();
+                File candidate = new File(classDir, "resources/" + loc);
+                if (!candidate.exists()) candidate = new File(classDir.getParentFile(), "resources/" + loc);
+                if (candidate.exists()) f = candidate;
+            }
+            if (f.exists())
+            {
+                try
+                {
+                    is = new java.io.FileInputStream(f);
+                }
+                catch (IOException e)
+                {
+                    System.err.println("Could not open file: resources/" + loc);
+                }
+            }
+        }
+        
+        // Method 3: Extract from JAR to disk (LAST RESORT)
+        if (is == null)
+        {
+            if (extractResourceFromJar("resources/" + loc))
+            {
+                try
+                {
+                    is = new java.io.FileInputStream(new File("resources/" + loc));
+                }
+                catch (IOException e)
+                {
+                    System.err.println("Could not read extracted resource: resources/" + loc);
+                }
+            }
+        }
+        
+        if (is == null)
+        {
+            throw new FileNotFoundException("Could not load resource from any source: resources/" + loc);
+        }
+        
         // First pass: count lines
         int ctr = 0;
-        try (InputStream in = getClass().getResourceAsStream(loc)) {
-            if (in == null)
-                throw new FileNotFoundException("Resource not found: " + loc);
-            Scanner file = new Scanner(in);
+        try (Scanner file = new Scanner(is)) {
             while (file.hasNextLine()) {
                 file.nextLine();
                 ctr++;
@@ -550,11 +598,38 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
 
         files.add(new PointsFile(ctr));
 
-        // Second pass: actually read data
-        try (InputStream in = getClass().getResourceAsStream(loc)) {
-            if (in == null)
-                throw new FileNotFoundException("Resource not found: " + loc);
-            Scanner file = new Scanner(in);
+        // Second pass: actually read data - need to reopen the stream
+        is = null;
+        is = getClass().getClassLoader().getResourceAsStream("resources/" + loc);
+        if (is == null)
+        {
+            File f = new File("resources/" + loc);
+            if (!f.exists())
+            {
+                String classPath = getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
+                File classDir = new File(classPath).getParentFile();
+                File candidate = new File(classDir, "resources/" + loc);
+                if (!candidate.exists()) candidate = new File(classDir.getParentFile(), "resources/" + loc);
+                if (candidate.exists()) f = candidate;
+            }
+            if (f.exists())
+            {
+                try
+                {
+                    is = new java.io.FileInputStream(f);
+                }
+                catch (IOException e)
+                {
+                    System.err.println("Could not open file: resources/" + loc);
+                }
+            }
+        }
+        if (is == null)
+        {
+            is = new java.io.FileInputStream(new File("resources/" + loc));
+        }
+        
+        try (Scanner file = new Scanner(is)) {
             ctr = 0;
             while (file.hasNextDouble()) {
                 files.getLast().x[ctr] = file.nextDouble();
@@ -564,6 +639,55 @@ public class ZombieApocalypse extends JFrame implements Runnable, MouseListener,
                 ctr++;
             }
         }
+    }
+    
+    private boolean extractResourceFromJar(String resourcePath)
+    {
+        try
+        {
+            java.io.InputStream in = getClass().getClassLoader().getResourceAsStream(resourcePath);
+            if (in != null)
+            {
+                java.io.File outFile = new java.io.File(resourcePath);
+                outFile.getParentFile().mkdirs();
+                java.io.FileOutputStream out = new java.io.FileOutputStream(outFile);
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1)
+                {
+                    out.write(buffer, 0, bytesRead);
+                }
+                in.close();
+                out.close();
+                return true;
+            }
+        }
+        catch (Exception ignored) {}
+        return false;
+    }
+
+    private File getScoresFile() {
+        // Try local directory first (for development and when JAR is in project root)
+        File scoresFile = new File("scores.txt");
+        if (scoresFile.exists()) {
+            return scoresFile;
+        }
+        
+        // For app bundle or when running from different directory, get JAR location
+        try {
+            String jarPath = getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
+            File jarFile = new File(jarPath);
+            File jarDir = jarFile.getParentFile();
+            if (jarDir != null) {
+                scoresFile = new File(jarDir, "scores.txt");
+                return scoresFile;
+            }
+        } catch (Exception e) {
+            // Fallback to local scores.txt
+        }
+        
+        // Final fallback to current directory
+        return new File("scores.txt");
     }
 
     public void sort(ArrayList<Integer> list, ArrayList<String> names, int first, int last)
